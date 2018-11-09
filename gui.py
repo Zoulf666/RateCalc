@@ -35,6 +35,14 @@ def add_contacts():
     pass
 
 
+def calc():
+    pass
+
+
+def get_contact():
+    return ["1231111111111111111111", "2", "3", "4"]
+
+
 window = tkinter.Tk()
 window.title('费用计算工具')
 window.geometry('600x300')
@@ -53,7 +61,7 @@ help_menu.add_command(label='版本信息', command=show_version_info)
 
 # 下拉列表及新增按钮
 select_list = tkinter.ttk.Combobox(window)
-select_list["values"] = ["1231111111111111111111", "2", "3", "4"]
+select_list["values"] = get_contact()
 select_list.bind("<<ComboboxSelected>>", go)
 tkinter.Label(window, text='请选择联系人:').grid(row=1, column=1)
 select_list.grid(row=1, column=2, padx=10, pady=10)
@@ -70,9 +78,12 @@ tkinter.Label(window, text="导入文件路径:").grid(row=3, column=1, pady=10)
 tkinter.Entry(window, textvariable=import_path, width=50).grid(row=3, column=2)
 tkinter.Button(window, text="路径选择", command=select_import_path).grid(row=3, column=3)
 
-tkinter.Label(window, text="输出文件夹路径:").grid(row=4, column=1)
+tkinter.Label(window, text="输出文件夹路径:").grid(row=4, column=1, pady=10)
 tkinter.Entry(window, textvariable=output_path, width=50).grid(row=4, column=2)
 tkinter.Button(window, text="路径选择", command=select_output_path).grid(row=4, column=3)
+
+# 开始计算按钮
+tkinter.Button(window, text="计算", command=calc, width=20).grid(row=5, column=2, pady=20)
 
 window.config(menu=menubar)
 window.mainloop()

@@ -2,7 +2,9 @@ import tkinter
 import tkinter.filedialog
 import tkinter.messagebox
 
+import model
 from tkinter import ttk
+
 
 
 def select_import_path():
@@ -32,7 +34,9 @@ def go(*args):
 
 
 def add_contacts():
-    pass
+    new_window = tkinter.Toplevel()
+    new_window.title('新增联系人')
+
 
 
 def calc():
@@ -40,12 +44,24 @@ def calc():
 
 
 def get_contact():
-    return ["1231111111111111111111", "2", "3", "4"]
+    data = model.query_all_custom()
+    custom_nams = []
+    remarks = []
+    for d in data:
+        c, r = d
+        custom_nams.append(c)
+        remarks.append(r)
+    return custom_nams, remarks
 
 
 window = tkinter.Tk()
 window.title('费用计算工具')
-window.geometry('600x300')
+screenwidth = window.winfo_screenwidth()
+screenheight = window.winfo_screenheight()
+width = 600
+height = 300
+size = '%dx%d+%d+%d' % (width, height, (screenwidth - width) / 2, (screenheight - height) / 2)
+window.geometry(size)
 
 # 菜单
 menubar = tkinter.Menu(window)
@@ -60,12 +76,14 @@ menubar.add_cascade(label='帮助', menu=help_menu)
 help_menu.add_command(label='版本信息', command=show_version_info)
 
 # 下拉列表及新增按钮
+remarks = []
 select_list = tkinter.ttk.Combobox(window)
-select_list["values"] = get_contact()
+select_list["values"], remarks = get_contact()
 select_list.bind("<<ComboboxSelected>>", go)
 tkinter.Label(window, text='请选择联系人:').grid(row=1, column=1)
-select_list.grid(row=1, column=2, padx=10, pady=10)
-add_button = tkinter.Button(window, text='新增', command=add_contacts).grid(row=1, column=3, pady=10)
+select_list.grid(row=1, column=2, pady=10)
+edit_button = tkinter.Button(window, text='编辑', command=add_contacts).grid(row=1, column=3, pady=10)
+add_button = tkinter.Button(window, text='新增', command=add_contacts).grid(row=1, column=4, pady=10)
 
 # 下划线
 canvas = tkinter.Canvas(window, bg='black', height=1, width=600)

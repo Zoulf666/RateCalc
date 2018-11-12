@@ -52,6 +52,19 @@ def update_custom(custom_id, custom_name, remark=None):
     conn.close()
 
 
+def query_custom_by_name(custom_name):
+    SQL = """
+    SELECT id FROM Custom WHERE custom_name="%s"
+    """ % (custom_name)
+    conn = sqlite3.connect('test.db')
+    cursor = conn.cursor()
+    cursor.execute(SQL)
+    custom_id = cursor.fetchone()
+    conn.commit()
+    conn.close()
+    return custom_id
+
+
 def query_all_custom():
     SQL = """
     SELECT custom_name, remark FROM Custom
@@ -89,10 +102,12 @@ def update_provice(id, provice_name, f_num, f_price, n_prive):
     conn.close()
 
 
-def query_provice_info(custom_id):
+def query_provice_info(custom_name):
+    custom_id = query_custom_by_name(custom_name)
     SQL = """
     SELECT provice_name, first_weight_num, first_weight_price, next_weight_price FROM Provice_info
-    """
+    WHERE custom='%d';
+    """ % (custom_id)
     conn = sqlite3.connect('test.db')
     cursor = conn.cursor()
     cursor.execute(SQL)
@@ -121,4 +136,13 @@ if __name__ == '__main__':
     # insert_custom('z')
     # # update_custom(1, '哈哈超市dsa', 'xx')
     # insert_provice(1, '湖南', 2, 2.5, 1.5)
-    print(query_provice_info(1))
+    provice_info = query_provice_info('创发')
+    provice_dict = {}
+    for p in provice_info:
+        tmp = {}
+        provice, first_weight_num, first_weight_price, next_weight_price = p
+        tmp['首重重量'] = first_weight_num
+        tmp['首重价格'] = first_weight_price
+        tmp['续重价格'] = next_weight_price
+        provice_dict[provice] = tmp
+    print(provice_dict)

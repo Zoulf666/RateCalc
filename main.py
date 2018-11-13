@@ -94,7 +94,7 @@ def add_contacts(name='', remark=''):
     contact_root.geometry(size)
 
     tkinter.Label(contact_root, text="姓名：").grid(row=0, column=0, pady=20, sticky=tkinter.E)
-    ety_name = tkinter.Entry(contact_root, textvariable=name_value)
+    ety_name = tkinter.Entry(contact_root, textvariable=name_value, width=25)
     ety_name.grid(row=0, column=1, columnspan=2, padx=10)
 
     tkinter.Label(contact_root, text="备注：").grid(row=1, column=0, sticky=tkinter.E)
@@ -134,7 +134,7 @@ def add_contacts(name='', remark=''):
     btn_confirm = tkinter.Button(
         contact_root,
         text='确定',
-        state='normal' if name else 'disabled',
+        # state='normal' if name else 'disabled',
         command=lambda: save_contact(contact_root, ety_name.get(), ety_remrk.get('1.0', tkinter.END)))
     btn_confirm.grid(row=5, column=0, sticky=tkinter.E)
 

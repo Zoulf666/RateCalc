@@ -82,12 +82,12 @@ def query_all_custom():
     return customs
 
 
-def insert_provice_info(custom_name, provice_name, f_num, f_price, n_prive):
+def insert_provice_info(custom_name, provice_name, f_num, f_price, n_price):
     custom_id = query_custom_id(custom_name)
     SQL = """
     INSERT INTO Provice_info (custom, provice_name, first_weight_num, first_weight_price, next_weight_price)
     VALUES ('%d', '%s', '%f', '%f', '%f');
-    """ % (custom_id, provice_name, f_num, f_price, n_prive)
+    """ % (custom_id, provice_name, f_num, f_price, n_price)
     conn = sqlite3.connect('test.db')
     cursor = conn.cursor()
     cursor.execute(SQL)

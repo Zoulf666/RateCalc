@@ -1,12 +1,24 @@
 import tkinter
 import utils
+import tkinter.messagebox
+import model
 
 
-def save_provice_info(data):
-    pass
+# TODO 浮点数验证
+def save_provice_info(data, custom_name):
+    for provice, v in data.items():
+        f_weight = float(v[0].get())
+        f_price = float(v[1].get())
+        n_price = float(v[2].get())
+        model.insert_provice_info(
+            custom_name=custom_name,
+            provice_name=provice,
+            f_num=f_weight,
+            f_price=f_price,
+            n_price=n_price
+        )
 
-
-def add_provice_info():
+def add_provice_info(custom_name):
     provice_root = tkinter.Toplevel()
     provice_root.title('编辑省份运费信息')
     provice_root.geometry(utils.center_root(provice_root, 400, 900))
@@ -31,7 +43,13 @@ def add_provice_info():
         tmp.append(f_price)
         tmp.append(n_price)
         provice_dict[provice] = tmp
-    tkinter.Button(provice_root, text='确定',
-                   command=lambda: save_provice_info(provice_dict)).grid(row=len(provices) + 2, column=0)
+    btn_save = tkinter.Button(provice_root, text='确定',
+                              command=lambda: save_provice_info(provice_dict, custom_name)).grid(row=len(provices) + 2,
+                                                                                               column=0)
     tkinter.Button(provice_root, text='取消', command=provice_root.destroy).grid(row=len(provices) + 2, column=1,
                                                                                columnspan=3, sticky=tkinter.E)
+    if not custom_name:
+        tkinter.messagebox.showerror('错误', '请先完善客户资料！')
+        provice_root.destroy()
+    else:
+        model.insert_custom(custom_name)

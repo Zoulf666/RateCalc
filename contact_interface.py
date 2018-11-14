@@ -76,7 +76,7 @@ def add_contacts(name='', remark=''):
     btn_edit_provice = tkinter.Button(
         contact_root,
         text='编辑省份数据-->',
-        command=provice_interface.add_provice_info)
+        command=lambda: provice_interface.add_provice_info(ety_name.get()))
     btn_edit_provice.grid(row=4, column=1, columnspan=2, sticky=tkinter.E)
 
     # 第五行，确定、取消按钮

@@ -13,9 +13,9 @@ def init_db():
           id INTEGER PRIMARY KEY NOT NULL,
           custom INT NOT NULL,
           provice_name VARCHAR(20) NOT NULL,
-          first_weight_num DECIMAL(10,2) NOT NULL,
-          first_weight_price DECIMAL(10,2) NOT NULL,
-          next_weight_price DECIMAL(10,2) NOT NULL,
+          first_weight_num REAL,
+          first_weight_price REAL,
+          next_weight_price REAL,
           FOREIGN KEY (custom) REFERENCES Custom(id) on delete cascade 
     )
     """
@@ -25,9 +25,6 @@ def init_db():
     cursor.execute(INIT_PROVICE_INFO)
     conn.commit()
     conn.close()
-
-
-# sqlite3.OperationalError
 
 
 def insert_custom(custom_name, remak=None):
@@ -41,7 +38,10 @@ def insert_custom(custom_name, remak=None):
     conn.close()
 
 
-def update_custom(custom_id, custom_name, remark=None):
+def update_custom(custom_name, remark=None):
+    custom_id = query_custom_id(custom_name)
+    if custom_id <= 0:
+        raise Exception('客户名不存在于数据库中！')
     SQL = """
     UPDATE Custom SET custom_name='%s', remark='%s' WHERE id='%d'
     """ % (custom_name, remark, custom_id)
@@ -52,17 +52,21 @@ def update_custom(custom_id, custom_name, remark=None):
     conn.close()
 
 
-def query_custom_by_name(custom_name):
+def query_custom_id(custom_name):
     SQL = """
     SELECT id FROM Custom WHERE custom_name="%s"
     """ % (custom_name)
     conn = sqlite3.connect('test.db')
     cursor = conn.cursor()
     cursor.execute(SQL)
-    custom_id = cursor.fetchone()
-    conn.commit()
-    conn.close()
-    return custom_id
+    try:
+        custom_id = cursor.fetchone()[0]
+        conn.commit()
+        return custom_id
+    except TypeError:
+        return 0
+    finally:
+        conn.close()
 
 
 def query_all_custom():
@@ -78,7 +82,8 @@ def query_all_custom():
     return customs
 
 
-def insert_provice(custom_id, provice_name, f_num, f_price, n_prive):
+def insert_provice_info(custom_name, provice_name, f_num, f_price, n_prive):
+    custom_id = query_custom_id(custom_name)
     SQL = """
     INSERT INTO Provice_info (custom, provice_name, first_weight_num, first_weight_price, next_weight_price)
     VALUES ('%d', '%s', '%f', '%f', '%f');
@@ -90,11 +95,12 @@ def insert_provice(custom_id, provice_name, f_num, f_price, n_prive):
     conn.close()
 
 
-def update_provice(id, provice_name, f_num, f_price, n_prive):
+def update_provice_info(custom_name, provice_name, f_num, f_price, n_prive):
+    custom_id = query_custom_id(custom_name)
     SQL = """
-    UPDATE Provice_info SET provice_name='%s', first_weight_num='%f', first_weight_price='%f', next_weight_price='%f'
-    WHERE id='%d';
-    """ % (provice_name, f_num, f_price, n_prive, id)
+    UPDATE Provice_info SET first_weight_num='%f', first_weight_price='%f', next_weight_price='%f'
+    WHERE custom='%d' AND provice_name='%s';
+    """ % (f_num, f_price, n_prive, custom_id, provice_name)
     conn = sqlite3.connect('test.db')
     cursor = conn.cursor()
     cursor.execute(SQL)
@@ -103,7 +109,7 @@ def update_provice(id, provice_name, f_num, f_price, n_prive):
 
 
 def query_provice_info(custom_name):
-    custom_id = query_custom_by_name(custom_name)
+    custom_id = query_custom_id(custom_name)
     SQL = """
     SELECT provice_name, first_weight_num, first_weight_price, next_weight_price FROM Provice_info
     WHERE custom='%d';
@@ -117,10 +123,10 @@ def query_provice_info(custom_name):
     return provice_info
 
 
-def delete(db_name, id):
+def delete_custom(custom_name):
     SQL = """
-    DELETE FROM '%s' WHERE id='%d'
-    """ % (db_name, id)
+    DELETE FROM Custom WHERE custom_name='%s'
+    """ % (custom_name)
     conn = sqlite3.connect('test.db')
     cursor = conn.cursor()
     # SQLite在3.6.19版本中才开始支持外键约束，但是为了兼容以前的程序，
@@ -136,13 +142,14 @@ if __name__ == '__main__':
     # insert_custom('z')
     # # update_custom(1, '哈哈超市dsa', 'xx')
     # insert_provice(1, '湖南', 2, 2.5, 1.5)
-    provice_info = query_provice_info('创发')
-    provice_dict = {}
-    for p in provice_info:
-        tmp = {}
-        provice, first_weight_num, first_weight_price, next_weight_price = p
-        tmp['首重重量'] = first_weight_num
-        tmp['首重价格'] = first_weight_price
-        tmp['续重价格'] = next_weight_price
-        provice_dict[provice] = tmp
-    print(provice_dict)
+    # provice_info = query_provice_info('创发')
+    # provice_dict = {}
+    # for p in provice_info:
+    #     tmp = {}
+    #     provice, first_weight_num, first_weight_price, next_weight_price = p
+    #     tmp['首重重量'] = first_weight_num
+    #     tmp['首重价格'] = first_weight_price
+    #     tmp['续重价格'] = next_weight_price
+    #     provice_dict[provice] = tmp
+    # print(provice_dict)
+    init_db()

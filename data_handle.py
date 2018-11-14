@@ -2,6 +2,8 @@ import math
 import xlrd
 # import xlwings as xw
 # import xlwt
+# import xlsxwriter
+
 import openpyxl
 
 # from xlutils.copy import copy as xl_copy
@@ -16,7 +18,7 @@ def calc_price(weight, first_weight_num, first_weight_price, next_weight_price):
         remain = math.ceil(weight - first_weight_num)
         remain_price = remain * next_weight_price
         price = first_weight_price + remain_price
-    return price
+    return float(price)
 
 
 def provice_dict_handle(custom_name):
@@ -32,26 +34,29 @@ def provice_dict_handle(custom_name):
     return provice_dict
 
 
-# def excel_handle(file_path, custom_name):
+# def excel_handle(import_path, export_path, custom_name):
 #     # TODO 异常处理，sheet为空异常
-#     # formatting_info=True确保打开原文件时保留原格式
-#     excel = xlrd.open_workbook(file_path)
-#     new_excel = xl_copy(excel)
-#     new_sheet = new_excel.get_sheet(0)
-#     print(type(new_sheet))
-#     print(new_sheet)
+#     import_excel = xlrd.open_workbook(import_path)
+#     output_excel = xlsxwriter.Workbook(export_path)
 #
-#     sheet_names = excel.sheet_names()
-#     # provice_dict = provice_dict_handle(custom_name)
+#     sheet_names = import_excel.sheet_names()
+#     provice_dict = provice_dict_handle(custom_name)
 #     for sheet_name in sheet_names:
-#         sheet = excel.sheet_by_name(sheet_name)
-#         weight_tr_name = sheet.cell(0, 2).value
-#         provice_tr_name = sheet.cell(0, 3).value
-#         if weight_tr_name != '重量' or weight_tr_name != '重量（kg）':
-#             raise Exception('请检查位置（1, C）名称是否为重量或重量（kg）！')
-#         if provice_tr_name != '目的省份' or provice_tr_name != '目的地省份':
-#             raise Exception('请检查位置（1, D）名称是否为目的省份！')
-#         for row in range(1, sheet.nrows):
+#         import_sheet = import_excel.sheet_by_name(sheet_name)
+#         output_sheet = output_excel.add_worksheet(sheet_name)
+#         nrows = import_sheet.nrows
+#         ncols = import_sheet.ncols
+#         output_sheet.set_column(0, ncols, 22)  # 设定列的宽度为22像素
+#         # weight_tr_name = sheet.cell(0, 2).value
+#         # provice_tr_name = sheet.cell(0, 3).value
+#         # if weight_tr_name != '重量' or weight_tr_name != '重量（kg）':
+#         #     raise Exception('请检查位置（1, C）名称是否为重量或重量（kg）！')
+#         # if provice_tr_name != '目的省份' or provice_tr_name != '目的地省份':
+#         #     raise Exception('请检查位置（1, D）名称是否为目的省份！')
+#
+#         for row in range(sheet.nrows):
+#             output_sheet.set_row(row, 22)  # 设定第i行单元格属性，高度为22像素，行索引从0开始
+#
 #             weight = sheet.cell(row, 2)
 #             provice = sheet.cell(row, 3)
 #             # TODO 异常处理，键异常
@@ -60,22 +65,31 @@ def provice_dict_handle(custom_name):
 #                 first_weight_price = provice_dict[provice]['首重价格']
 #                 next_weight_price = provice_dict[provice]['续重价格']
 #             else:
-#                 raise KeyError('请检查文件中的省份名是否正确，位置({}, {})'.format(row+1, 3+1))
+#                 raise KeyError('请检查文件中的省份名是否正确，位置({}, {})'.format(row + 1, 3 + 1))
 #             price = calc_price(weight, first_weight_num, first_weight_price, next_weight_price)
 
 
 def excel_handle(path, custom_name):
+    # 注：openpyxl 下标从1开始
     wb = openpyxl.load_workbook(path)
     sheets = wb.worksheets
-
     provice_dict = provice_dict_handle(custom_name)
     for sheet in sheets:
+        price_col = sheet.max_column - 1
+        price_sum_col = sheet.max_column
         max_row = sheet.max_row
-        max_col = sheet.max_column
-        if not sheet.cell(row=1, column=max_col).value == '运费总数':
-            sheet.cell(row=1, column=max_col + 1).value = '运费'
-            sheet.cell(row=1, column=max_col + 2).value = '运费总数'
-        count = 0
+        sum_price = 0
+
+        if max_row <= 1:
+            continue
+
+        if not sheet.cell(row=1, column=price_sum_col).value == '运费总数':
+            price_col = sheet.max_column + 1
+            price_sum_col = price_col + 1
+            sheet.cell(row=1, column=price_col).value = '运费'
+            sheet.cell(row=1, column=price_sum_col).value = '运费总数'
+
+        # 从第2行开始为数据
         for row in range(2, max_row + 1):
             weight = sheet.cell(row=row, column=3).value
             provice = sheet.cell(row=row, column=4).value
@@ -84,10 +98,13 @@ def excel_handle(path, custom_name):
                 first_weight_price = provice_dict[provice]['首重价格']
                 next_weight_price = provice_dict[provice]['续重价格']
                 price = calc_price(weight, first_weight_num, first_weight_price, next_weight_price)
-                print(price)
-                count += 1
-        print(count) 
+                sum_price += price
+                sheet.cell(row=row, column=price_col).value = price
 
+        # 写入总金额
+        sheet.cell(2, price_sum_col).value = float(sum_price)
+
+    wb.save(path)
 
 
 if __name__ == '__main__':

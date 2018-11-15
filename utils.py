@@ -1,6 +1,5 @@
 import tkinter
 import tkinter.filedialog
-import data_handle
 
 
 def center_root(root, width, height):
@@ -21,9 +20,3 @@ def select_import_path(import_path):
     path = tkinter.filedialog.askopenfilename()
     import_path.set(path)
     return path
-
-
-def calc(select, ety_import):
-    custom_name = select.get()
-    path = ety_import.get()
-    data_handle.excel_handle(path, custom_name)

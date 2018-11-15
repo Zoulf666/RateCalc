@@ -6,7 +6,7 @@ def init_db():
     INIT_CUSTOM = '''CREATE TABLE Custom (
               id  INTEGER PRIMARY KEY DEFAULT NULL,
               custom_name VARCHAR(50) NOT NULL,
-              remark TEXT DEFAULT NULL
+              remark TEXT DEFAULT NULL DEFAULT '无'
             );'''
     INIT_PROVICE_INFO = """
     CREATE TABLE Provice_info(
@@ -28,6 +28,8 @@ def init_db():
 
 
 def insert_custom(custom_name, remak=None):
+    if query_custom_id(custom_name):
+        return
     SQL = """
     INSERT INTO Custom (custom_name, remark) VALUES ('%s', '%s');
     """ % (custom_name, remak)
@@ -95,12 +97,12 @@ def insert_provice_info(custom_name, provice_name, f_num, f_price, n_price):
     conn.close()
 
 
-def update_provice_info(custom_name, provice_name, f_num, f_price, n_prive):
+def update_provice_info(custom_name, provice_name, f_num, f_price, n_price):
     custom_id = query_custom_id(custom_name)
     SQL = """
     UPDATE Provice_info SET first_weight_num='%f', first_weight_price='%f', next_weight_price='%f'
     WHERE custom='%d' AND provice_name='%s';
-    """ % (f_num, f_price, n_prive, custom_id, provice_name)
+    """ % (f_num, f_price, n_price, custom_id, provice_name)
     conn = sqlite3.connect('test.db')
     cursor = conn.cursor()
     cursor.execute(SQL)
@@ -137,6 +139,21 @@ def delete_custom(custom_name):
     conn.close()
 
 
+def query_provice_id(custom_name, provice_name):
+    custom_id = query_custom_id(custom_name)
+    SQL = """
+    SELECT id FROM Provice_info
+    WHERE custom='%d' AND provice_name='%s';
+    """ % (custom_id, provice_name)
+    conn = sqlite3.connect('test.db')
+    cursor = conn.cursor()
+    cursor.execute(SQL)
+    provice_id = cursor.fetchone()
+    conn.commit()
+    conn.close()
+    return provice_id
+
+
 if __name__ == '__main__':
     # init_db()
     # insert_custom('z')
@@ -152,4 +169,4 @@ if __name__ == '__main__':
     #     tmp['续重价格'] = next_weight_price
     #     provice_dict[provice] = tmp
     # print(provice_dict)
-    init_db()
+    pass

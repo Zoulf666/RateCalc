@@ -1,12 +1,5 @@
 import math
-import xlrd
-# import xlwings as xw
-# import xlwt
-# import xlsxwriter
-
 import openpyxl
-
-# from xlutils.copy import copy as xl_copy
 import model
 
 
@@ -22,6 +15,10 @@ def calc_price(weight, first_weight_num, first_weight_price, next_weight_price):
 
 
 def provice_dict_handle(custom_name):
+    """
+    :param custom_name:
+    :return: {'湖南':{'首重重量': 1.0 ...}}
+    """
     provice_info = model.query_provice_info(custom_name)
     provice_dict = {}
     for p in provice_info:
@@ -107,8 +104,32 @@ def excel_handle(path, custom_name):
     wb.save(path)
 
 
+def excel_provice_handle(path):
+    wb = openpyxl.load_workbook(path)
+    sheetnames = wb.sheetnames
+
+    for name in sheetnames:
+        # 判断客户是否存在，不存在创建
+        if not model.query_custom_id(name):
+            model.insert_custom(name)
+        sheet = wb[name]
+        for row in range(2, sheet.max_row + 1):
+            provice = sheet.cell(row=row, column=1).value
+            # 因为可能把空的单元格算进去，所以需要判断
+            if not provice:
+                continue
+            f_num = float(sheet.cell(row=row, column=2).value)
+            f_price = float(sheet.cell(row=row, column=3).value)
+            n_price = float(sheet.cell(row=row, column=4).value)
+
+            if model.query_provice_id(name, provice):
+                model.update_provice_info(name, provice, f_num, f_price, n_price)
+            else:
+                model.insert_provice_info(name, provice, f_num, f_price, n_price)
+
+
 if __name__ == '__main__':
-    excel_handle('9月消防张10.18日发送.xlsx', '创发')
+    # excel_handle('9月消防张10.18日发送.xlsx', '创发')
 
     # wb = xw.Book()  # 这句创建一个新的工作薄
     # wb = xw.Book('9月消防张10.18日发送.xlsx')  # 连接到当前工作目录中的现有文件
@@ -120,3 +141,5 @@ if __name__ == '__main__':
     # wb.save()
     # wb.close()
     # app.quit()
+    # print(provice_dict_handle('tesx'))
+    excel_provice_handle('长大价格表.xlsx')

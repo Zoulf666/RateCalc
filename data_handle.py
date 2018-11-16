@@ -14,21 +14,26 @@ def calc_price(weight, first_weight_num, first_weight_price, next_weight_price):
     return float(price)
 
 
-def provice_dict_handle(custom_name):
-    """
-    :param custom_name:
-    :return: {'湖南':{'首重重量': 1.0 ...}}
-    """
-    provice_info = model.query_provice_info(custom_name)
-    provice_dict = {}
-    for p in provice_info:
-        tmp = {}
-        provice, first_weight_num, first_weight_price, next_weight_price = p
-        tmp['首重重量'] = first_weight_num
-        tmp['首重价格'] = first_weight_price
-        tmp['续重价格'] = next_weight_price
-        provice_dict[provice] = tmp
-    return provice_dict
+# def provice_dict_handle(custom_name):
+#     """
+#     :param custom_name:
+#     :return: {'湖南':{'首重重量': 1.0 ...}}
+#     """
+#     custom = model.Custom()
+#     custom_detail = model.CustomDetail()
+#     custom_id = custom.find_custom(custom_name)
+#     provice_info = custom_detail.fetch_custom_detail(custom_id)
+#     custom.close()
+#     custom_detail.close()
+#     provice_dict = {}
+#     for p in provice_info:
+#         tmp = {}
+#         provice, first_weight_num, first_weight_price, next_weight_price = p
+#         tmp['首重重量'] = first_weight_num
+#         tmp['首重价格'] = first_weight_price
+#         tmp['续重价格'] = next_weight_price
+#         provice_dict[provice] = tmp
+#     return provice_dict
 
 
 # def excel_handle(import_path, export_path, custom_name):
@@ -66,11 +71,27 @@ def provice_dict_handle(custom_name):
 #             price = calc_price(weight, first_weight_num, first_weight_price, next_weight_price)
 
 
+# def provice_dict_handle(custom_name):
+#     """
+#     根据用户名提供该用户的全部详细资料
+#     :param custom_name:
+#     :return:
+#     """
+#     custom = model.Custom()
+#     custom_detail = model.CustomDetail()
+#     custom_id = custom.find_custom(custom_name)
+#     provice_dict = custom_detail.fetch_custom_detail(custom_id)
+#     return provice_dict
+
+
 def excel_handle(path, custom_name):
     # 注：openpyxl 下标从1开始
     wb = openpyxl.load_workbook(path)
     sheets = wb.worksheets
-    provice_dict = provice_dict_handle(custom_name)
+    custom = model.Custom()
+    custom_detail = model.CustomDetail()
+    custom_id = custom.find_custom(custom_name)
+    provice_dict = custom_detail.fetch_custom_detail(custom_id)
     for sheet in sheets:
         price_col = sheet.max_column - 1
         price_sum_col = sheet.max_column
@@ -104,14 +125,18 @@ def excel_handle(path, custom_name):
     wb.save(path)
 
 
-def excel_provice_handle(path):
+def excel_provice_handle(path, progress):
+    progress.start(10)
     wb = openpyxl.load_workbook(path)
     sheetnames = wb.sheetnames
 
+    custom = model.Custom()
+    custom_detail = model.CustomDetail()
     for name in sheetnames:
         # 判断客户是否存在，不存在创建
-        if not model.query_custom_id(name):
-            model.insert_custom(name)
+        custom_id = custom.find_custom(name)
+        if custom_id == 0:
+            custom_id = custom.add_custom(name)
         sheet = wb[name]
         for row in range(2, sheet.max_row + 1):
             provice = sheet.cell(row=row, column=1).value
@@ -122,11 +147,12 @@ def excel_provice_handle(path):
             f_price = float(sheet.cell(row=row, column=3).value)
             n_price = float(sheet.cell(row=row, column=4).value)
 
-            if model.query_provice_id(name, provice):
-                model.update_provice_info(name, provice, f_num, f_price, n_price)
+            if custom_detail.find_custom_detail(custom_id, provice):
+                custom_detail.update_custom_detail(custom_id, provice, f_num, f_price, n_price)
             else:
-                model.insert_provice_info(name, provice, f_num, f_price, n_price)
+                custom_detail.add_custom_detail(custom_id, provice, f_num, f_price, n_price)
 
+    progress.stop()
 
 if __name__ == '__main__':
     # excel_handle('9月消防张10.18日发送.xlsx', '创发')
@@ -143,3 +169,13 @@ if __name__ == '__main__':
     # app.quit()
     # print(provice_dict_handle('tesx'))
     excel_provice_handle('长大价格表.xlsx')
+
+
+def progress(master):
+    frame = tkinter.Frame(master).grid(row=5, column=0, columnspan=5)  # 使用时将框架根据情况选择新的位置
+    canvas = tkinter.Canvas(frame, width=150, height=30)
+    canvas.grid(row=5, column=0, columnspan=4, sticky=tkinter.E)
+    progress_num = tkinter.StringVar()
+    out_rec = canvas.create_rectangle(5, 5, 105, 25, outline="blue", width=0)
+    fill_rec = canvas.create_rectangle(5, 5, 5, 25, outline="", width=0, fill="blue")
+    tkinter.Label(frame, textvariable=progress_num).grid(row=5, column=4, sticky=tkinter.W)

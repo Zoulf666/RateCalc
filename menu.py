@@ -8,6 +8,7 @@ def display_menu(master):
     menubar.add_cascade(label='文件', menu=file_menu)
     file_menu.add_command(label='新增联系人', command=show_version_info)
     file_menu.add_command(label='编辑联系人', command=show_version_info)
+    file_menu.add_command(label='删除联系人', command=show_version_info)
     file_menu.add_separator()
     file_menu.add_command(label='退出', command=master.quit)
     help_menu = tkinter.Menu(file_menu, tearoff=0)

@@ -18,6 +18,8 @@ def edit_contacts(select_list):
     except Exception as e:
         print(e)
         tkinter.messagebox.showerror('错误', e)
+    finally:
+        custom.close()
 
 
 def add_contacts(select_list, name='', remark=''):
@@ -68,11 +70,11 @@ def add_contacts(select_list, name='', remark=''):
 
 
 def save_contact(master, custom_name, remark, select_list):
+    custom = model.Custom()
     try:
         if not custom_name:
             raise Exception('客户名不能为空！')
         old_custom_name = select_list.get()
-        custom = model.Custom()
         custom_id = custom.find_custom(old_custom_name)
         custom.update_custom(custom_id, custom_name, remark)
         select_list['values'] = list(custom.fetch_custom().keys())
@@ -80,3 +82,5 @@ def save_contact(master, custom_name, remark, select_list):
     except Exception as e:
         print(e)
         tkinter.messagebox.showerror('错误', e)
+    finally:
+        custom.close()

@@ -9,6 +9,9 @@ pip install -r requirements.txt
 ```
 
 
-程序入口：main.py
+使用：
+```
+python main.py
+```
 
 注意：导入请按照excel样例格式。

@@ -68,6 +68,8 @@ def import_custom():
         root.update()
 
 
+model.init_db()
+
 root = Tk()
 root.title('费用计算工具')
 # root.resizable(False, False)  # 让窗口不可以缩放

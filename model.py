@@ -3,13 +3,13 @@ from sqlite3 import connect
 
 # 初始化数据库
 def init_db():
-    INIT_CUSTOM = '''CREATE TABLE Custom (
+    INIT_CUSTOM = '''CREATE TABLE IF NOT EXISTS Custom (
               id  INTEGER PRIMARY KEY DEFAULT NULL,
               custom_name VARCHAR(50) NOT NULL,
               remark TEXT DEFAULT NULL DEFAULT '无'
             );'''
     INIT_PROVICE_INFO = """
-    CREATE TABLE Provice_info(
+    CREATE TABLE IF NOT EXISTS Provice_info(
           id INTEGER PRIMARY KEY NOT NULL,
           custom INT NOT NULL,
           provice_name VARCHAR(20) NOT NULL,

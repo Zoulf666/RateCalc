@@ -1,24 +1,24 @@
 import math
-import openpyxl
 import model
-import time
+
+from openpyxl import load_workbook
+from math import ceil
 
 
 def calc_price(weight, first_weight_num, first_weight_price, next_weight_price):
-    weight = math.ceil(weight)  # 向上取整
+    weight = ceil(weight)  # 向上取整
     if weight <= first_weight_num:
         price = first_weight_price
     else:
-        remain = math.ceil(weight - first_weight_num)
+        remain = ceil(weight - first_weight_num)
         remain_price = remain * next_weight_price
         price = first_weight_price + remain_price
     return float(price)
 
 
 def excel_handle(path):
-    start = time.time()
     # 注：openpyxl 下标从1开始
-    wb = openpyxl.load_workbook(path)
+    wb = load_workbook(path)
     sheets = wb.worksheets
     custom = model.Custom()
     custom_detail = model.CustomDetail()
@@ -58,19 +58,22 @@ def excel_handle(path):
             if not custom_id:
                 raise Exception('用户名: {} 未录入数据库中！'.format(custom_name))
             name_dict[custom_name] = custom_detail.fetch_custom_detail(custom_id)
-        print(name_dict)
 
         # 从第2行开始为数据
         for row in range(2, max_row + 1):
             weight = sheet.cell(row=row, column=3).value
             provice = sheet.cell(row=row, column=4).value
             name = sheet.cell(row=row, column=13).value
+
+            can_calc = False
             if provice in name_dict[name]:
                 can_calc = True
-            elif custom_detail.find_custom_detail(custom.find_custom_like(name), provice):
-                can_calc = True
             else:
-                can_calc = False
+                custom_id = custom.find_custom_like(name)
+                if custom_detail.find_custom_detail(custom_id, provice):
+                    provice = custom_detail.find_provice(custom_id, provice)
+                    if provice:
+                        can_calc = True
 
             if can_calc:
                 first_weight_num = name_dict[name][provice]['首重重量']
@@ -88,56 +91,10 @@ def excel_handle(path):
     wb.save(path)
     custom.close()
     custom_detail.close()
-    end = time.time()
-    print('耗时: {}'.format(end - start))
-
-
-def excel_handle2(path, custom_name):
-    start = time.time()
-    # 注：openpyxl 下标从1开始
-    wb = openpyxl.load_workbook(path)
-    sheets = wb.worksheets
-    custom = model.Custom()
-    custom_detail = model.CustomDetail()
-    custom_id = custom.find_custom(custom_name)
-    provice_dict = custom_detail.fetch_custom_detail(custom_id)
-    for sheet in sheets:
-        price_col = sheet.max_column - 1
-        price_sum_col = sheet.max_column
-        max_row = sheet.max_row
-        sum_price = 0
-
-        if max_row <= 1:
-            continue
-
-        if not sheet.cell(row=1, column=price_sum_col).value == '运费总数':
-            price_col = sheet.max_column + 1
-            price_sum_col = price_col + 1
-            sheet.cell(row=1, column=price_col).value = '运费'
-            sheet.cell(row=1, column=price_sum_col).value = '运费总数'
-
-        # 从第2行开始为数据
-        for row in range(2, max_row + 1):
-            weight = sheet.cell(row=row, column=3).value
-            provice = sheet.cell(row=row, column=4).value
-            if provice in provice_dict:
-                first_weight_num = provice_dict[provice]['首重重量']
-                first_weight_price = provice_dict[provice]['首重价格']
-                next_weight_price = provice_dict[provice]['续重价格']
-                price = calc_price(weight, first_weight_num, first_weight_price, next_weight_price)
-                sum_price += price
-                sheet.cell(row=row, column=price_col).value = price
-
-        # 写入总金额
-        sheet.cell(2, price_sum_col).value = float(sum_price)
-
-    wb.save(path)
-    end = time.time()
-    print('耗时: {}'.format(end - start))
 
 
 def excel_provice_handle(path):
-    wb = openpyxl.load_workbook(path)
+    wb = load_workbook(path)
     sheetnames = wb.sheetnames
 
     custom = model.Custom()
@@ -179,7 +136,7 @@ if __name__ == '__main__':
     # wb.close()
     # app.quit()
     # print(provice_dict_handle('tesx'))
-    excel_provice_handle('客户表.xlsx')
+    excel_provice_handle('客户表1.xlsx')
 
 # def progress(master):
 #     frame = tkinter.Frame(master).grid(row=5, column=0, columnspan=5)  # 使用时将框架根据情况选择新的位置

@@ -1,4 +1,4 @@
-import sqlite3
+from sqlite3 import connect
 
 
 # 初始化数据库
@@ -19,7 +19,7 @@ def init_db():
           FOREIGN KEY (custom) REFERENCES Custom(id) on delete cascade 
     )
     """
-    conn = sqlite3.connect('test.db')
+    conn = connect('test.db')
     cursor = conn.cursor()
     cursor.execute(INIT_CUSTOM)
     cursor.execute(INIT_PROVICE_INFO)
@@ -29,7 +29,7 @@ def init_db():
 
 class Custom:
     def __init__(self):
-        self.conn = sqlite3.connect('test.db')
+        self.conn = connect('test.db')
         self.cur = self.conn.cursor()
 
     def add_custom(self, custom_name, remark='无'):
@@ -91,7 +91,6 @@ class Custom:
         """.format(custom_name)
         self.cur.execute(SQL)
         custom_id = self.cur.fetchall()
-        print(custom_id)
         if len(custom_id) > 1:
             raise Exception('客户名： {} 错误，请传入正确的客户名！'.format(custom_name))
         return custom_id[0][0] if custom_id else 0
@@ -116,7 +115,7 @@ class Custom:
 
 class CustomDetail:
     def __init__(self):
-        self.conn = sqlite3.connect('test.db')
+        self.conn = connect('test.db')
         self.cur = self.conn.cursor()
 
     def add_custom_detail(self, custom_id, provice_name, f_num, f_price, n_price):
@@ -152,6 +151,7 @@ class CustomDetail:
         """.format(provice_name)
         self.cur.execute(SQL, (custom_id,))
         provice_id = self.cur.fetchall()
+
         if len(provice_id) > 1:
             raise Exception('目的省份 {} 错误！'.format(provice_name))
         return provice_id[0][0] if provice_id else 0
@@ -163,9 +163,9 @@ class CustomDetail:
         :return: {'湖南': {'首重'重量: 1.0, ...}
         """
         SQL = """
-        SELECT provice_name, first_weight_num, first_weight_price, next_weight_price FROM Provice_info
-        WHERE custom=?;
-        """
+            SELECT provice_name, first_weight_num, first_weight_price, next_weight_price FROM Provice_info
+            WHERE custom=?;
+            """
         self.cur.execute(SQL, (custom_id,))
         provice_info = self.cur.fetchall()
         provice_dict = {}
@@ -178,146 +178,34 @@ class CustomDetail:
             provice_dict[provice] = tmp
         return provice_dict
 
+    def find_provice(self, custom_id, provice_name):
+        """
+        找到明确的一条详情信息
+        :param custom_id:
+        :param provice_name:
+        :return: id(int)
+        """
+        SQL = """
+        SELECT provice_name FROM Provice_info
+        WHERE custom=? AND provice_name LIKE '%{}%';
+        """.format(provice_name)
+        self.cur.execute(SQL, (custom_id,))
+        provice_id = self.cur.fetchall()
+
+        if len(provice_id) > 1:
+            raise Exception('目的省份 {} 错误！'.format(provice_name))
+        return provice_id[0][0] if provice_id else 0
+
     def close(self):
         self.cur.close()
         self.conn.close()
 
 
-#
-# def insert_custom(custom_name, remak=None):
-#     if query_custom_id(custom_name):
-#         return
-#     SQL = """
-#     INSERT INTO Custom (custom_name, remark) VALUES ('%s', '%s');
-#     """ % (custom_name, remak)
-#     conn = sqlite3.connect('test.db')
-#     cursor = conn.cursor()
-#     cursor.execute(SQL)
-#     conn.commit()
-#     conn.close()
-#
-#
-# def update_custom(custom_name, remark=None):
-#     custom_id = query_custom_id(custom_name)
-#     if custom_id <= 0:
-#         raise Exception('客户名不存在于数据库中！')
-#     SQL = """
-#     UPDATE Custom SET custom_name='%s', remark='%s' WHERE id='%d'
-#     """ % (custom_name, remark, custom_id)
-#     conn = sqlite3.connect('test.db')
-#     cursor = conn.cursor()
-#     cursor.execute(SQL)
-#     conn.commit()
-#     conn.close()
-#
-#
-# def query_custom_id(custom_name):
-#     SQL = """
-#     SELECT id FROM Custom WHERE custom_name="%s"
-#     """ % (custom_name)
-#     conn = sqlite3.connect('test.db')
-#     cursor = conn.cursor()
-#     cursor.execute(SQL)
-#     try:
-#         custom_id = cursor.fetchone()[0]
-#         conn.commit()
-#         return custom_id
-#     except TypeError:
-#         return 0
-#     finally:
-#         conn.close()
-#
-#
-# def query_all_custom():
-#     SQL = """
-#     SELECT custom_name, remark FROM Custom
-#     """
-#     conn = sqlite3.connect('test.db')
-#     cursor = conn.cursor()
-#     cursor.execute(SQL)
-#     customs = cursor.fetchall()
-#     conn.commit()
-#     conn.close()
-#     return customs
-#
-#
-# def insert_provice_info(custom_name, provice_name, f_num, f_price, n_price):
-#     custom_id = query_custom_id(custom_name)
-#     SQL = """
-#     INSERT INTO Provice_info (custom, provice_name, first_weight_num, first_weight_price, next_weight_price)
-#     VALUES ('%d', '%s', '%f', '%f', '%f');
-#     """ % (custom_id, provice_name, f_num, f_price, n_price)
-#     conn = sqlite3.connect('test.db')
-#     cursor = conn.cursor()
-#     cursor.execute(SQL)
-#     conn.commit()
-#     conn.close()
-#
-#
-# def update_provice_info(custom_name, provice_name, f_num, f_price, n_price):
-#     custom_id = query_custom_id(custom_name)
-#     SQL = """
-#     UPDATE Provice_info SET first_weight_num='%f', first_weight_price='%f', next_weight_price='%f'
-#     WHERE custom='%d' AND provice_name='%s';
-#     """ % (f_num, f_price, n_price, custom_id, provice_name)
-#     conn = sqlite3.connect('test.db')
-#     cursor = conn.cursor()
-#     cursor.execute(SQL)
-#     conn.commit()
-#     conn.close()
-#
-#
-# def query_provice_info(custom_name):
-#     custom_id = query_custom_id(custom_name)
-#     SQL = """
-#     SELECT provice_name, first_weight_num, first_weight_price, next_weight_price FROM Provice_info
-#     WHERE custom='%d';
-#     """ % (custom_id)
-#     conn = sqlite3.connect('test.db')
-#     cursor = conn.cursor()
-#     cursor.execute(SQL)
-#     provice_info = cursor.fetchall()
-#     conn.commit()
-#     conn.close()
-#     return provice_info
-#
-#
-# def delete_custom(custom_name):
-#     SQL = """
-#     DELETE FROM Custom WHERE custom_name='%s'
-#     """ % (custom_name)
-#     conn = sqlite3.connect('test.db')
-#     cursor = conn.cursor()
-#     # SQLite在3.6.19版本中才开始支持外键约束，但是为了兼容以前的程序，
-#     # 默认并没有启用该功能，如果要启用该功能每次都要需要使用如下语句：PRAGMA foreign_keys = ON来打开。
-#     cursor.execute("PRAGMA foreign_keys=ON")
-#     cursor.execute(SQL)
-#     conn.commit()
-#     conn.close()
-#
-#
-# def query_provice_id(custom_name, provice_name):
-#     custom_id = query_custom_id(custom_name)
-#     SQL = """
-#     SELECT id FROM Provice_info
-#     WHERE custom='%d' AND provice_name='%s';
-#     """ % (custom_id, provice_name)
-#     conn = sqlite3.connect('test.db')
-#     cursor = conn.cursor()
-#     cursor.execute(SQL)
-#     provice_id = cursor.fetchone()
-#     conn.commit()
-#     conn.close()
-#     return provice_id
-
-
 if __name__ == '__main__':
-    # custom_detail = CustomDetail()
-    # print(custom_detail.find_custom_detail(1, '湖南'))
-    #
-    # custom_detail.close()
+    custom_detail = CustomDetail()
     custom = Custom()
-    custom_id = custom.find_custom('客至')
-    custom.delete_custom(custom_id)
-    # custom_id = custom.find_custom('客')
-    # print(custom_id)
+
+    custom_id = custom.find_custom_like('张作为')
+    x = custom_detail.fetch_custom_detail(5)
+    print(x)
+    pass

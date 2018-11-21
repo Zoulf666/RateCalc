@@ -1,5 +1,4 @@
-import tkinter
-import tkinter.filedialog
+from tkinter.filedialog import askopenfilename
 
 
 def center_root(root, width, height):
@@ -17,6 +16,6 @@ def right_root(root, width, height, parent_width):
 
 
 def select_import_path(import_path):
-    path = tkinter.filedialog.askopenfilename()
+    path = askopenfilename()
     import_path.set(path)
     return path

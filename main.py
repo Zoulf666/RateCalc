@@ -2,6 +2,7 @@ import utils
 import data_handle
 import time
 import model
+import os
 
 from tkinter import Tk
 from tkinter import Label
@@ -30,6 +31,12 @@ def select_contact_by_name(*args):
 
 def calc(path):
     try:
+        if not path:
+            raise Exception('导入文件路径不能为空！')
+        if not os.path.exists(path):
+            raise Exception('导入文件路径不存在！')
+        if not path.split('/')[-1].split('.')[1] == '.xlsx':
+            raise Exception('导入文件格式错误！请导入.xlsx结尾的文件！')
         for i in range(0, 45, 5):
             progress_bar["value"] = i + 1
             root.update()
@@ -42,14 +49,18 @@ def calc(path):
         showinfo(message='计算成功！')
     except Exception as e:
         print(e)
-        showerror(message=e)
+        showerror(title='计算失败', message=e)
         progress_bar["value"] = 0
         root.update()
 
 
 def import_custom():
     try:
-        path = askopenfilename()
+        path = askopenfilename(defaultextension='xlsx')
+        if not path:
+            return
+        if not path.split('/')[-1].split('.')[1] == '.xlsx':
+            raise Exception('导入文件格式错误！请导入.xlsx结尾的文件！')
         for i in range(0, 45, 5):
             progress_bar["value"] = i + 1
             root.update()
@@ -63,7 +74,7 @@ def import_custom():
         showinfo(message='导入成功！')
     except Exception as e:
         print(e)
-        showerror(message='导入数据不合法！')
+        showerror(title='导入失败', message=e)
         progress_bar["value"] = 0
         root.update()
 
@@ -72,7 +83,7 @@ model.init_db()
 
 root = Tk()
 root.title('费用计算工具')
-# root.resizable(False, False)  # 让窗口不可以缩放
+root.resizable(False, False)  # 让窗口不可以缩放
 size = utils.center_root(root, 600, 320)
 root.geometry(size)
 root.maxsize(600, 450)

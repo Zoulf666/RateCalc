@@ -16,6 +16,6 @@ def right_root(root, width, height, parent_width):
 
 
 def select_import_path(import_path):
-    path = askopenfilename()
+    path = askopenfilename(defaultextension='xlsx')
     import_path.set(path)
     return path

@@ -56,8 +56,8 @@ def calc(path):
 
 def import_custom():
     try:
-        # path = askopenfilename(defaultextension='xlsx', filetypes=[('excel', 'xlsx')])
-        path = askopenfilename(defaultextension='xlsx')
+        path = askopenfilename(defaultextension='xlsx', filetypes=[('excel', 'xlsx')])
+        # path = askopenfilename(defaultextension='xlsx')
         if not path:
             return
         if not os.path.splitext(path)[1] == '.xlsx':

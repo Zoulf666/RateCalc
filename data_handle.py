@@ -105,6 +105,15 @@ def excel_provice_handle(path):
         if custom_id == 0:
             custom_id = custom.add_custom(name)
         sheet = wb[name]
+
+        header1 = sheet.cell(row=1, column=1).value
+        header2 = sheet.cell(row=1, column=2).value
+        header3 = sheet.cell(row=1, column=3).value
+        header4 = sheet.cell(row=1, column=4).value
+        if not header1 == '目的地' and not header2 == '首重重量' and not header3 == '首重价格' and not header4 == '续重价格':
+            custom.delete_custom(custom_id)
+            raise Exception('表头格式错误！请按照样例格式输入！')
+
         for row in range(2, sheet.max_row + 1):
             provice = sheet.cell(row=row, column=1).value
             # 因为可能把空的单元格算进去，所以需要判断

@@ -35,7 +35,8 @@ def calc(path):
             raise Exception('导入文件路径不能为空！')
         if not os.path.exists(path):
             raise Exception('导入文件路径不存在！')
-        if not path.split('/')[-1].split('.')[1] == '.xlsx':
+
+        if not path.split('/')[-1].split('.')[1] == 'xlsx':
             raise Exception('导入文件格式错误！请导入.xlsx结尾的文件！')
         for i in range(0, 45, 5):
             progress_bar["value"] = i + 1
@@ -56,10 +57,10 @@ def calc(path):
 
 def import_custom():
     try:
-        path = askopenfilename(defaultextension='xlsx')
+        path = askopenfilename(defaultextension='xlsx', filetypes=[('excel', 'xlsx')])
         if not path:
             return
-        if not path.split('/')[-1].split('.')[1] == '.xlsx':
+        if not path.split('/')[-1].split('.')[1] == 'xlsx':
             raise Exception('导入文件格式错误！请导入.xlsx结尾的文件！')
         for i in range(0, 45, 5):
             progress_bar["value"] = i + 1

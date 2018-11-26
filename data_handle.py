@@ -1,4 +1,3 @@
-import math
 import model
 
 from openpyxl import load_workbook

@@ -25,8 +25,9 @@ def init_db():
               id  INTEGER PRIMARY KEY NOT NULL,
               custom INT NOT NULL,
               provice_name VARCHAR(20) NOT NULL,
-              price_data VARCHAR (200) NOT NULL 
-    """
+              price_data VARCHAR (200) NOT NULL, 
+              FOREIGN KEY (custom) REFERENCES Custom(id) on delete cascade 
+    );"""
     conn = connect('test.db')
     cursor = conn.cursor()
     cursor.execute(INIT_CUSTOM)
@@ -41,7 +42,7 @@ class Custom:
         self.conn = connect('test.db')
         self.cur = self.conn.cursor()
 
-    def add_custom(self, custom_name, remark='无'):
+    def add_custom(self, custom_name, is_special=0, remark='无'):
         """
         添加一条客户数据，加了去重检查，保证客户数据唯一性
         :param custom_name:
@@ -51,10 +52,10 @@ class Custom:
         if self.find_custom(custom_name) > 0:
             raise Exception('你输入的用户名 {} 已存在！'.format(custom_name))
         SQL = """
-        INSERT INTO Custom (custom_name, remark) VALUES (?, ?);
+        INSERT INTO Custom (custom_name, remark, is_special) VALUES (?, ?, ?);
         """
         # 防止SQL注入攻击
-        self.cur.execute(SQL, (custom_name, remark))
+        self.cur.execute(SQL, (custom_name, remark, is_special))
         self.conn.commit()
         custom_id = self.cur.lastrowid
         return custom_id
@@ -122,6 +123,14 @@ class Custom:
         customs = self.cur.fetchall()
         data = {custom_name: remark for custom_name, remark in customs}
         return data
+
+    def get_special_value(self, custom_id):
+        SQL = """
+        SELECT is_special FROM Custom WHERE id=?
+        """
+        self.cur.execute(SQL, (custom_id,))
+        is_special = self.cur.fetchone()
+        return is_special[0] if is_special else 0
 
     def close(self):
         self.cur.close()
@@ -205,11 +214,11 @@ class CustomDetail:
         WHERE custom=? AND provice_name LIKE '%{}%';
         """.format(provice_name)
         self.cur.execute(SQL, (custom_id,))
-        provice_id = self.cur.fetchall()
+        provice_names = self.cur.fetchall()
 
-        if len(provice_id) > 1:
+        if len(provice_names) > 1:
             raise Exception('目的省份 {} 错误！'.format(provice_name))
-        return provice_id[0][0] if provice_id else 0
+        return provice_names[0][0] if provice_names else 0
 
     def close(self):
         self.cur.close()
@@ -291,11 +300,11 @@ class SpecialCustomDetail:
         WHERE custom=? AND provice_name LIKE '%{}%';
         """.format(provice_name)
         self.cur.execute(SQL, (custom_id,))
-        provice_id = self.cur.fetchall()
+        provice_names = self.cur.fetchall()
 
-        if len(provice_id) > 1:
+        if len(provice_names) > 1:
             raise Exception('目的省份 {} 错误！'.format(provice_name))
-        return provice_id[0][0] if provice_id else 0
+        return provice_names[0][0] if provice_names else 0
 
     def close(self):
         self.cur.close()

@@ -138,21 +138,23 @@ def excel_provice_handle(path):
     custom = model.Custom()
     custom_detail = model.CustomDetail()
     new_customs = []
+    error_customs = []
     for sheet in sheets:
         sheetname = sheet.name
         # 判断客户是否存在，不存在创建
-        custom_id = custom.find_custom(sheetname)
-        if custom_id == 0:
-            custom_id = custom.add_custom(sheetname)
-            new_customs.append(sheetname)
-
         header1 = sheet.cell_value(rowx=0, colx=0)
         header2 = sheet.cell_value(rowx=0, colx=1)
         header3 = sheet.cell_value(rowx=0, colx=2)
         header4 = sheet.cell_value(rowx=0, colx=3)
         if not header1 == '目的地' and not header2 == '首重重量' and not header3 == '首重价格' and not header4 == '续重价格':
-            custom.delete_custom(custom_id)
-            raise Exception('表头格式错误！请按照样例格式输入！')
+            # TODO 做出判断
+            if
+            error_customs.append(sheetname)
+            break
+        custom_id = custom.find_custom(sheetname)
+        if custom_id == 0:
+            custom_id = custom.add_custom(sheetname)
+            new_customs.append(sheetname)
 
         detail_dict = custom_detail.fetch_custom_detail(custom_id)
 
@@ -180,7 +182,7 @@ def excel_provice_handle(path):
                 custom_detail.add_custom_detail(custom_id, provice, f_num, f_price, n_price)
     custom.close()
     custom_detail.close()
-    return new_customs
+    return new_customs, error_customs
 
 
 def excel_handle2(path):

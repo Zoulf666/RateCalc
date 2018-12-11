@@ -29,6 +29,13 @@ def select_contact_by_name(*args):
     remark.set(infos[custom_name])
 
 
+def select_import_path(i_path):
+    path = askopenfilename(defaultextension='xlsx',  filetypes=[('excel', 'xlsx')])
+    # path = askopenfilename(defaultextension='xlsx')
+    i_path.set(path)
+    return path
+
+
 def calc(path):
     btn_calc['state'] = 'disable'
     btn_import_custom['state'] = 'disable'
@@ -78,13 +85,14 @@ def import_custom():
             progress_bar["value"] = i + 1
             root.update()
             time.sleep(0.05)
-        new_customs = data_handle.excel_provice_handle(path)
+        new_customs, error_customs = data_handle.excel_provice_handle(path)
         for i in range(40, 101, 10):
             progress_bar["value"] = i
             root.update()
             time.sleep(0.05)
         select_list["values"] = list(custom.fetch_custom().keys())
-        showinfo(message='导入成功！新增客户{}!'.format(", ".join(new_customs)) if len(new_customs) > 0 else '导入成功！无新增用户！')
+        showinfo(message='导入成功！新增客户：{}!\n'
+                         '导入格式错误用户：{}'.format(", ".join(new_customs), ", ".join(error_customs)) if len(new_customs) > 0 or len(error_customs) > 0 else '导入成功！无新增用户！')
     except Exception as e:
         print(e)
         showerror(title='导入失败', message=e)
@@ -134,7 +142,7 @@ import_path = StringVar()
 Label(root, text="导入文件路径:").grid(row=3, column=0, pady=10)
 ety_import = Entry(root, textvariable=import_path, width=50)
 ety_import.grid(row=3, column=1, columnspan=3, pady=10)
-btn_import = Button(root, text="路径选择", command=lambda: utils.select_import_path(import_path))
+btn_import = Button(root, text="路径选择", command=lambda: select_import_path(import_path))
 btn_import.grid(row=3, column=4, pady=10)
 
 # 第四行：计算按钮

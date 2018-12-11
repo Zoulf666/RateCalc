@@ -30,6 +30,8 @@ def select_contact_by_name(*args):
 
 
 def calc(path):
+    btn_calc['state'] = 'disable'
+    btn_import_custom['state'] = 'disable'
     try:
         if not path:
             raise Exception('导入文件路径不能为空！')
@@ -41,17 +43,27 @@ def calc(path):
             progress_bar["value"] = i + 1
             root.update()
             time.sleep(0.01)
-        data_handle.excel_handle(path)
+        unsign = data_handle.excel_handle2(path)
+        print(unsign)
         for i in range(40, 101, 10):
             progress_bar["value"] = i
             root.update()
             time.sleep(0.01)
-        showinfo(message='计算成功！')
+        if unsign:
+            msg = '未录入客户：\n'
+            for k, v in unsign.items():
+                msg += '未录入客户：{}, 共出现{}次 \n'.format(v[0], v[1])
+            showinfo(message='计算成功, ' + msg + '请正确录入上述用户')
+        else:
+            showinfo(message='计算成功！')
     except Exception as e:
         print(e)
         showerror(title='计算失败', message=e)
         progress_bar["value"] = 0
         root.update()
+    finally:
+        btn_calc['state'] = 'normal'
+        btn_import_custom['state'] = 'normal'
 
 
 def import_custom():
@@ -66,13 +78,13 @@ def import_custom():
             progress_bar["value"] = i + 1
             root.update()
             time.sleep(0.05)
-        data_handle.excel_provice_handle(path)
+        new_customs = data_handle.excel_provice_handle(path)
         for i in range(40, 101, 10):
             progress_bar["value"] = i
             root.update()
             time.sleep(0.05)
         select_list["values"] = list(custom.fetch_custom().keys())
-        showinfo(message='导入成功！')
+        showinfo(message='导入成功！新增客户{}!'.format(", ".join(new_customs)) if len(new_customs) > 0 else '导入成功！无新增用户！')
     except Exception as e:
         print(e)
         showerror(title='导入失败', message=e)

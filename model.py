@@ -92,7 +92,13 @@ class Custom:
         self.cur.execute(SQL)
         custom_id = self.cur.fetchall()
         if len(custom_id) > 1:
-            raise Exception('客户名： {} 错误，请传入正确的客户名！'.format(custom_name))
+            for i in custom_id:
+                id = self.find_custom(custom_name)
+                if id:
+                    return id
+                else:
+                    raise Exception('客户名： {} 错误，请传入正确的客户名！'.format(custom_name))
+
         return custom_id[0][0] if custom_id else 0
 
     def fetch_custom(self):

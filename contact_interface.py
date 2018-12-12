@@ -26,6 +26,10 @@ def edit_contacts(select_list):
     try:
         if not name:
             raise Exception('未选定编辑对象！')
+        custom_id = custom.find_custom(name)
+        is_special = custom.get_special_value(custom_id)
+        if is_special:
+            raise Exception('该用户为特殊客户，不可编辑！')
         add_contacts(select_list, name, remark)
     except Exception as e:
         print(e)

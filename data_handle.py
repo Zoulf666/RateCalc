@@ -1,21 +1,39 @@
 import model
-import time
-import xlrd
-import json
 
+from xlrd import open_workbook
 from openpyxl import load_workbook
+from json import dumps
+from json import loads
 from math import ceil
 
 
 def calc_special_custom_price(weight, price_dict):
-    range_dict = {float(key.split('<=')[1]): float(value) for key, value in price_dict.items() if '<=' in key}
-    index = 0
-    range_keys = sorted(range_dict.keys())
-
+    """
+    :param weight: float
+    :param price_dict: {'<=3':2.6, '<=2': 1.6 ...}
+    :return: price
+    """
+    price = 0
+    extra_price = 0
+    lower_dict = {}
     for key, value in price_dict.items():
         if '<=' in key:
+            num = float(key.split('<=')[1])
+            lower_dict[num] = float(value)
+        if '>' in key:
+            extra_price = float(value)
+    lower_list = sorted(lower_dict.keys(), reverse=True)
+    if weight > lower_list[0]:
+        price = lower_dict[lower_list[0]] + (weight - lower_list[0]) * extra_price
+    else:
+        for k, num in enumerate(lower_list):
+            if weight > num:
+                price = lower_dict[lower_list[k - 1]]
+                break
+            else:
+                price = lower_dict[lower_list[-1]]
 
-
+    return price
 
 
 def calc_price(weight, first_weight_num, first_weight_price, next_weight_price):
@@ -144,7 +162,7 @@ def calc_price(weight, first_weight_num, first_weight_price, next_weight_price):
 
 
 def excel_provice_handle(path):
-    data = xlrd.open_workbook(path)
+    data = open_workbook(path)
     sheets = data.sheets()
 
     custom = model.Custom()
@@ -183,7 +201,6 @@ def excel_provice_handle(path):
             else:
                 tmp = []
                 for k in tr_index_dict.keys():
-                    print(k)
                     if '<=' in k:
                         is_error_date = False
                     if '>' in k:
@@ -240,7 +257,7 @@ def excel_provice_handle(path):
                     if key == '目的地':
                         continue
                     range_dict[key] = float(sheet.cell_value(rowx=row, colx=tr_index_dict[key]))
-                range_dict = json.dumps(range_dict)
+                range_dict = dumps(range_dict)
                 special_custom_id = special_custom.find_custom_detail(custom_id, provice)
                 if special_custom_id:
                     if provice in detail_dict:
@@ -260,7 +277,6 @@ def excel_provice_handle(path):
 
 
 def excel_handle2(path):
-    start = time.time()
     # 注：openpyxl 下标从1开始
     wb = load_workbook(path)
     sheetnames = wb.sheetnames
@@ -268,9 +284,9 @@ def excel_handle2(path):
     custom_detail = model.CustomDetail()
     special_custom = model.SpecialCustomDetail()
     unsign_info = {}  # 记录未注册用户 name: sheet位置
+    error_provice = {}
     head = {}  # 表头位置
     for sheetname in sheetnames:
-        print(sheetname)
         current_sheetname = sheetname
         sheet = wb[sheetname]
         price_col = sheet.max_column - 1
@@ -281,19 +297,21 @@ def excel_handle2(path):
         # 去除空sheet
         if max_row <= 1:
             continue
+        print(sheetname)
         # 动态获取表头位置
-        for col in range(1, sheet.max_column):
-            val = sheet.cell(1, col).value
+        for col in range(1, sheet.max_column + 1):
+            val = sheet.cell(1, col).value.strip()
             if val == '重量':
                 head['weight'] = col
             elif val == '目的省份':
                 head['provice'] = col
             elif val == '寄件客户':
                 head['name'] = col
+            print(val)
+            print(type(val))
         # 检查表头格式
-        for _, v in head.items():
-            if not v:
-                raise Exception('sheet 名：{} 表头名称错误，请检查表头是否为 重量/ 目的省份/ 寄件客户!'.format(sheetname))
+        if len(head.keys()) != 3:
+            raise Exception('sheet 名：{} 表头名称错误，请检查表头是否为 重量/ 目的省份/ 寄件客户!'.format(sheetname))
 
         # 在最后一行增加运费与运费总数
         if not sheet.cell(row=1, column=price_sum_col).value == '运费总数':
@@ -344,6 +362,11 @@ def excel_handle2(path):
 
             if provice:
                 provice = provice.strip()
+                if '=' in provice:
+                    provice = provice.replace('=', '')
+                    provice = sheet[provice].value
+                    print(provice)
+                    print(type(provice))
             else:
                 continue
 
@@ -355,7 +378,7 @@ def excel_handle2(path):
             # 检查名字是否存在于数据库中
             if name not in custom_names:
                 if name not in unsign_info:
-                    unsign_info[name] = ['{}, 第一次出现在工作表<{}>)'.format(name, current_sheetname), 1]
+                    unsign_info[name] = ['{}, 第一次出现在工作表<{}> - {}行)'.format(name, current_sheetname, row - 1), 1]
                 else:
                     unsign_info[name][-1] += 1
                 continue
@@ -378,7 +401,7 @@ def excel_handle2(path):
             if can_calc:
                 if is_special:
                     price_data = name_dict[name][provice]['重量价格']
-                    price_dict = json.loads(price_data)
+                    price_dict = loads(price_data)
                     price = calc_special_custom_price(weight, price_dict)
                 else:
                     first_weight_num = name_dict[name][provice]['首重重量']
@@ -388,19 +411,23 @@ def excel_handle2(path):
                 sum_price += price
                 sheet.cell(row=row, column=price_col).value = price
             else:
-                raise Exception('sheet名：{}, 第 {} 行, 目的省份{}未录入数据库中！'.format(sheetname, row, provice))
+                print(provice)
+                error_provice[provice] = row
+                e = 'sheet名：{}, 第 {} 行, 目的省份{}未录入数据库中!'.format(sheetname, row, provice)
+                print(e)
         # 写入总金额
         sheet.cell(2, price_sum_col).value = float(sum_price)
     wb.save(path)
     custom.close()
     custom_detail.close()
-    end = time.time()
-    print('spend {} s'.format(end - start))
-    return unsign_info
+    return unsign_info, error_provice
 
 
 if __name__ == '__main__':
-    new, error = excel_provice_handle('客户价格表(正确格式数据).xlsx')
-    print(new)
+    # new, error = excel_provice_handle('客户价格表(正确格式数据)2.xlsx')
+    # print(new)
+    # print(error)
+    unsign, error = excel_handle2('11月做账定系统测试.xlsx')
+    print(unsign)
     print(error)
     print('====')

@@ -1,9 +1,9 @@
 import utils
 import data_handle
-import time
 import model
 import os.path
 
+from time import sleep
 from tkinter import Tk
 from tkinter import Label
 from tkinter import Button
@@ -49,17 +49,21 @@ def calc(path):
         for i in range(0, 45, 5):
             progress_bar["value"] = i + 1
             root.update()
-            time.sleep(0.01)
-        unsign = data_handle.excel_handle2(path)
+            sleep(0.01)
+        unsign, error_provice = data_handle.excel_handle2(path)
         print(unsign)
+        print(error_provice)
         for i in range(40, 101, 10):
             progress_bar["value"] = i
             root.update()
-            time.sleep(0.01)
+            sleep(0.01)
         if unsign:
             msg = '未录入客户：\n'
             for k, v in unsign.items():
                 msg += '未录入客户：{}, 共出现{}次 \n'.format(v[0], v[1])
+            if error_provice:
+                for error, index in error_provice.items():
+                    msg += '\n 第{}行，省份名：{}有误或未录入数据库！'.format(index, error)
             showinfo(message='计算成功, ' + msg + '请正确录入上述用户')
         else:
             showinfo(message='计算成功！')
@@ -84,15 +88,22 @@ def import_custom():
         for i in range(0, 45, 5):
             progress_bar["value"] = i + 1
             root.update()
-            time.sleep(0.05)
+            sleep(0.05)
         new_customs, error_customs = data_handle.excel_provice_handle(path)
         for i in range(40, 101, 10):
             progress_bar["value"] = i
             root.update()
-            time.sleep(0.05)
-        select_list["values"] = list(custom.fetch_custom().keys())
-        showinfo(message='导入成功！新增客户：{}!\n'
-                         '导入格式错误用户：{}'.format(", ".join(new_customs), ", ".join(error_customs)) if len(new_customs) > 0 or len(error_customs) > 0 else '导入成功！无新增用户！')
+            sleep(0.05)
+
+        select_list["values"] = list(model.Custom().fetch_custom().keys())
+        msg = '导入成功！\n'
+        if new_customs:
+            for custom in new_customs:
+                msg += '新增用户：{} \n'.format(custom)
+        if error_customs:
+            for custom in error_customs:
+                msg += '导入格式有误用户：{}'.format(custom)
+        showinfo(message=msg, title='success!')
     except Exception as e:
         print(e)
         showerror(title='导入失败', message=e)

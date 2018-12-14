@@ -47,120 +47,6 @@ def calc_price(weight, first_weight_num, first_weight_price, next_weight_price):
     return float(price)
 
 
-# def excel_handle(path):
-#     start = time.time()
-#     # 注：openpyxl 下标从1开始
-#     wb = load_workbook(path)
-#     sheets = wb.worksheets
-#     custom = model.Custom()
-#     custom_detail = model.CustomDetail()
-#     unsign_info = {}
-#
-#     for sheet in sheets:
-#         price_col = sheet.max_column - 1
-#         price_sum_col = sheet.max_column
-#         max_row = sheet.max_row
-#         sum_price = 0
-#
-#         # 去除空sheet
-#         if max_row <= 1:
-#             continue
-#
-#         # 在最后一行增加运费与运费总数
-#         if not sheet.cell(row=1, column=price_sum_col).value == '运费总数':
-#             price_col = sheet.max_column + 1
-#             price_sum_col = price_col + 1
-#             sheet.cell(row=1, column=price_col).value = '运费'
-#             sheet.cell(row=1, column=price_sum_col).value = '运费总数'
-#
-#         # 动态表头位置
-#         head = {}
-#         for col in range(1, sheet.max_column):
-#             if sheet.cell(1, col).value == '重量':
-#                 head['weight'] = col
-#             if sheet.cell(1, col).value == '目的省份':
-#                 head['provice'] = col
-#             if sheet.cell(1, col).value == '寄件客户':
-#                 head['name'] = col
-#
-#         # 检查表头格式
-#         for _, v in head.items():
-#             if not v:
-#                 raise Exception('sheet - {} 表头名称错误，请检查表头是否为 重量/ 目的省份/ 寄件客户!'.format(sheet))
-#
-#         # 姓名集合（集合特性去重）
-#         custom_names = set(v.value for index, v in enumerate(sheet[chr(64 + head['name'])]) if not index == 0)
-#         print(custom_names)
-#
-#         center = time.time()
-#         print('Center1: {}'.format(center - start))
-#
-#         """
-#         name_dict字典格式：{
-#                                     '张三': {
-#                                                 '湖南': {
-#                                                                 '首重重量': 1.0,
-#                                                                 ...
-#                                                            }
-#                                                 '湖北': ...
-#                                                 }
-#                                     '李四': ...
-#                              }
-#         """
-#         name_dict = {}
-#         for custom_name in custom_names:
-#             custom_id = custom.find_custom_like(custom_name)
-#             # 没找到指定用户（custom_id=0）抛出异常
-#             if not custom_id:
-#                 # raise Exception('sheet - {}, 用户名: {} 未录入数据库中！'.format(sheetname, custom_name))
-#                 unsign_info[custom_name] = 'sheet-{}'.format(sheet.title)
-#             else:
-#                 name_dict[custom_name] = custom_detail.fetch_custom_detail(custom_id)
-#         print(name_dict)
-#
-#         center = time.time()
-#         print('Center2: {}'.format(center - start))
-#
-#         # 从第2行开始为数据
-#         for row in range(2, max_row + 1):
-#             weight = sheet.cell(row=row, column=head['weight']).value
-#             provice = sheet.cell(row=row, column=head['provice']).value
-#             name = sheet.cell(row=row, column=head['name']).value
-#
-#             # 检查名字是否存在于数据库汇总
-#             if name not in name_dict:
-#                 continue
-#
-#             # 模糊匹配省份
-#             can_calc = False
-#             if provice in name_dict[name]:
-#                 can_calc = True
-#             else:
-#                 custom_id = custom.find_custom_like(name)
-#                 if custom_detail.find_custom_detail(custom_id, provice):
-#                     provice = custom_detail.find_provice(custom_id, provice)
-#                     if provice:
-#                         can_calc = True
-#
-#             if can_calc:
-#                 first_weight_num = name_dict[name][provice]['首重重量']
-#                 first_weight_price = name_dict[name][provice]['首重价格']
-#                 next_weight_price = name_dict[name][provice]['续重价格']
-#                 price = calc_price(weight, first_weight_num, first_weight_price, next_weight_price)
-#                 sum_price += price
-#                 sheet.cell(row=row, column=price_col).value = price
-#             else:
-#                 raise Exception('sheet - {}, 第 {} 行, 目的省份{}未录入数据库中！'.format(sheet.title, row, provice))
-#         # 写入总金额
-#         sheet.cell(2, price_sum_col).value = float(sum_price)
-#     wb.save(path)
-#     custom.close()
-#     custom_detail.close()
-#     end = time.time()
-#     print(end - start)
-#     return unsign_info
-
-
 def excel_provice_handle(path):
     data = open_workbook(path)
     sheets = data.sheets()
@@ -179,6 +65,11 @@ def excel_provice_handle(path):
 
         # 遍历第一行（表头）的值
         for index, value in enumerate(first_rows):
+            if value:
+                value = value.strip()
+            else:
+                continue
+
             if value == '目的地':
                 tr_index_dict['目的地'] = index
             elif value == '首重重量':
@@ -233,9 +124,12 @@ def excel_provice_handle(path):
                 # 因为可能把空的单元格算进去，所以需要判断
                 if not provice:
                     continue
-                f_num = float(sheet.cell_value(rowx=row, colx=tr_index_dict['首重重量']))
-                f_price = float(sheet.cell_value(rowx=row, colx=tr_index_dict['首重价格']))
-                n_price = float(sheet.cell_value(rowx=row, colx=tr_index_dict['续重价格']))
+                try:
+                    f_num = float(sheet.cell_value(rowx=row, colx=tr_index_dict['首重重量']))
+                    f_price = float(sheet.cell_value(rowx=row, colx=tr_index_dict['首重价格']))
+                    n_price = float(sheet.cell_value(rowx=row, colx=tr_index_dict['续重价格']))
+                except ValueError:
+                    raise ValueError('请检查表 - {} 中的第{}行，确保首重重量/ 首重价格/ 续重价格中不包含中文！'.format(sheetname, row))
                 custom_detail_id = custom_detail.find_custom_detail(custom_id, provice)
                 # 找到则执行更新操作（小优化的），未找到则执行添加操作
                 if custom_detail_id:
@@ -256,7 +150,10 @@ def excel_provice_handle(path):
                 for key in tr_index_dict.keys():
                     if key == '目的地':
                         continue
-                    range_dict[key] = float(sheet.cell_value(rowx=row, colx=tr_index_dict[key]))
+                    try:
+                        range_dict[key] = float(sheet.cell_value(rowx=row, colx=tr_index_dict[key]))
+                    except ValueError:
+                        raise ValueError('请检查表 - {} 中的第{}行，确保首重重量/ 首重价格/ 续重价格中不包含中文！'.format(sheetname, row))
                 range_dict = dumps(range_dict)
                 special_custom_id = special_custom.find_custom_detail(custom_id, provice)
                 if special_custom_id:
@@ -300,15 +197,15 @@ def excel_handle2(path):
         print(sheetname)
         # 动态获取表头位置
         for col in range(1, sheet.max_column + 1):
-            val = sheet.cell(1, col).value.strip()
+            val = sheet.cell(1, col).value
+            if val:
+                val = val.strip()
             if val == '重量':
                 head['weight'] = col
             elif val == '目的省份':
                 head['provice'] = col
             elif val == '寄件客户':
                 head['name'] = col
-            print(val)
-            print(type(val))
         # 检查表头格式
         if len(head.keys()) != 3:
             raise Exception('sheet 名：{} 表头名称错误，请检查表头是否为 重量/ 目的省份/ 寄件客户!'.format(sheetname))
@@ -355,8 +252,12 @@ def excel_handle2(path):
             if custom_id:
                 is_special = custom.get_special_value(custom_id)
 
+            # TODO 重量float
             if weight:
-                weight = float(weight)
+                try:
+                    weight = float(weight)
+                except ValueError:
+                    raise ValueError('重量行 - {} 中不能包含中文! '.format(row))
             else:
                 continue
 
@@ -365,8 +266,6 @@ def excel_handle2(path):
                 if '=' in provice:
                     provice = provice.replace('=', '')
                     provice = sheet[provice].value
-                    print(provice)
-                    print(type(provice))
             else:
                 continue
 
@@ -413,8 +312,6 @@ def excel_handle2(path):
             else:
                 print(provice)
                 error_provice[provice] = row
-                e = 'sheet名：{}, 第 {} 行, 目的省份{}未录入数据库中!'.format(sheetname, row, provice)
-                print(e)
         # 写入总金额
         sheet.cell(2, price_sum_col).value = float(sum_price)
     wb.save(path)

@@ -1,6 +1,5 @@
 import model
 
-from xlrd import open_workbook
 from openpyxl import load_workbook
 from json import dumps
 from json import loads
@@ -14,14 +13,23 @@ def calc_special_custom_price(weight, price_dict):
     :return: price
     """
     price = 0
-    extra_price = 0
+    extra_price = ''
     lower_dict = {}
+    # TODO 计算规则
     for key, value in price_dict.items():
+        # 如果是字符串直接按照字符串的计算公式算出结果
+        if type(value) is 'str':
+            if 'ROUNDUP' in value:
+                price = eval(value.replace('ROUNDUP(重量)', ceil(weight)))
+            else:
+                price = eval(value.replace('重量', weight))
+            return price
         if '<=' in key:
-            num = float(key.split('<=')[1])
-            lower_dict[num] = float(value)
+            # 当处于小于状态时，重量最大范围数值
+            range_weight_num = float(key.split('<=')[1])
+            lower_dict[range_weight_num] = value
         if '>' in key:
-            extra_price = float(value)
+            extra_price = value
     lower_list = sorted(lower_dict.keys(), reverse=True)
     if weight > lower_list[0]:
         price = lower_dict[lower_list[0]] + (weight - lower_list[0]) * extra_price
@@ -48,23 +56,26 @@ def calc_price(weight, first_weight_num, first_weight_price, next_weight_price):
 
 
 def excel_provice_handle(path):
-    data = open_workbook(path)
-    sheets = data.sheets()
+    wb = load_workbook(path)
+    sheetnames = wb.sheetnames
 
     custom = model.Custom()
     custom_detail = model.CustomDetail()
     special_custom = model.SpecialCustomDetail()
     new_customs = []
     error_customs = []
-    for sheet in sheets:
-        sheetname = sheet.name
-        first_rows = sheet.row_values(0)
+    for sheetname in sheetnames:
+        sheet = wb[sheetname]
+        first_rows = sheet.rows[0]
         tr_index_dict = {}
         is_error_date = True
         is_special = 0
 
         # 遍历第一行（表头）的值
-        for index, value in enumerate(first_rows):
+        for index, v in enumerate(first_rows):
+            # openpyxl 从1开始
+            index = index + 1
+            value = v.value
             if value:
                 value = value.strip()
             else:
@@ -117,19 +128,19 @@ def excel_provice_handle(path):
             detail_dict = custom_detail.fetch_custom_detail(custom_id)
 
         # 一行一行的进行遍历
-        for row in range(1, sheet.nrows):
-            provice = sheet.cell_value(rowx=row, colx=tr_index_dict['目的地'])
+        for row in range(1, sheet.max_row + 1):
+            provice = sheet.cell(row=row, column=tr_index_dict['目的地']).value
             # 普通用户下的操作
             if not is_special:
                 # 因为可能把空的单元格算进去，所以需要判断
                 if not provice:
                     continue
                 try:
-                    f_num = float(sheet.cell_value(rowx=row, colx=tr_index_dict['首重重量']))
-                    f_price = float(sheet.cell_value(rowx=row, colx=tr_index_dict['首重价格']))
-                    n_price = float(sheet.cell_value(rowx=row, colx=tr_index_dict['续重价格']))
+                    f_num = float(sheet.cell(row=row, column=tr_index_dict['首重重量']).value)
+                    f_price = float(sheet.cell(row=row, column=tr_index_dict['首重价格']).value)
+                    n_price = float(sheet.cell(row=row, column=tr_index_dict['续重价格']).value)
                 except ValueError:
-                    raise ValueError('请检查表 - {} 中的第{}行，确保首重重量/ 首重价格/ 续重价格中不包含中文！'.format(sheetname, row))
+                    raise ValueError('请检查表 - {} 中的第{}行，确保首重重量/ 首重价格/ 续重价格中除了数字以及小数点以外不含其他字符！'.format(sheetname, row))
                 custom_detail_id = custom_detail.find_custom_detail(custom_id, provice)
                 # 找到则执行更新操作（小优化的），未找到则执行添加操作
                 if custom_detail_id:
@@ -150,10 +161,26 @@ def excel_provice_handle(path):
                 for key in tr_index_dict.keys():
                     if key == '目的地':
                         continue
+                    val = sheet.cell(row=row, column=tr_index_dict[key]).value
                     try:
-                        range_dict[key] = float(sheet.cell_value(rowx=row, colx=tr_index_dict[key]))
+                        val = float(val)
                     except ValueError:
-                        raise ValueError('请检查表 - {} 中的第{}行，确保首重重量/ 首重价格/ 续重价格中不包含中文！'.format(sheetname, row))
+                        if '+' in val:
+                            tmp = val.split('+')
+                            val = sheet[tmp[0]] + '+' + tmp[1].strip()
+                            # 限制输入字符
+                            try:
+                                tmp2 = val
+                                if 'ROUNDUP' in tmp2:
+                                    tmp2 = tmp2.replace('ROUNDUP', '')
+                                tmp2 = tmp2.replace('重量', '100')
+                                eval(tmp2)
+                            except Exception:
+                                raise Exception('表-{}, 行-{}, 列-{} 中出现除了占位符<重量>以外的其他中文或中文符号！')
+                        else:
+                            raise Exception('表-{}, 行-{}, 列-{} 格式有误！'.format(sheetname, row, tr_index_dict[key]))
+                    finally:
+                        range_dict[key] = val
                 range_dict = dumps(range_dict)
                 special_custom_id = special_custom.find_custom_detail(custom_id, provice)
                 if special_custom_id:

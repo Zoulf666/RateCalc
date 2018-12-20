@@ -13,34 +13,43 @@ def calc_special_custom_price(weight, price_dict):
     :return: price
     """
     price = 0
-    extra_price = ''
+    extra_price = None
+    # 低位字典，存储低位值
     lower_dict = {}
-    # TODO 计算规则
+    # 整理好用户数据
     for key, value in price_dict.items():
-        # 如果是字符串直接按照字符串的计算公式算出结果
-        if type(value) is 'str':
-            if 'ROUNDUP' in value:
-                price = eval(value.replace('ROUNDUP(重量)', ceil(weight)))
-            else:
-                price = eval(value.replace('重量', weight))
-            return price
         if '<=' in key:
             # 当处于小于状态时，重量最大范围数值
             range_weight_num = float(key.split('<=')[1])
             lower_dict[range_weight_num] = value
         if '>' in key:
             extra_price = value
+
+    # 低位列表，用于判断总重量是否在低位范围
     lower_list = sorted(lower_dict.keys(), reverse=True)
+
+    # 当总重量大于范围重量
     if weight > lower_list[0]:
-        price = lower_dict[lower_list[0]] + (weight - lower_list[0]) * extra_price
+        if type(extra_price) is str:
+            if 'ROUNDUP' in extra_price:
+                price = eval(extra_price.replace('ROUNDUP(重量)', str(ceil(weight))))
+            else:
+                price = eval(extra_price.replace('重量', str(weight)))
+        else:
+            price = lower_dict[lower_list[0]] + (ceil(weight) - lower_list[0]) * extra_price
     else:
         for k, num in enumerate(lower_list):
             if weight > num:
-                price = lower_dict[lower_list[k - 1]]
+                if type(lower_dict[lower_list[k - 1]]) is str:
+                    price = eval(extra_price.replace('重量', str(weight)))
+                else:
+                    price = lower_dict[lower_list[k - 1]]
                 break
             else:
-                price = lower_dict[lower_list[-1]]
-
+                if type(lower_dict[lower_list[-1]]) is str:
+                    price = eval(extra_price.replace('重量', str(weight)))
+                else:
+                    price = lower_dict[lower_list[-1]]
     return price
 
 
@@ -66,7 +75,7 @@ def excel_provice_handle(path):
     error_customs = []
     for sheetname in sheetnames:
         sheet = wb[sheetname]
-        first_rows = sheet.rows[0]
+        first_rows = list(sheet.rows)[0]
         tr_index_dict = {}
         is_error_date = True
         is_special = 0
@@ -128,13 +137,13 @@ def excel_provice_handle(path):
             detail_dict = custom_detail.fetch_custom_detail(custom_id)
 
         # 一行一行的进行遍历
-        for row in range(1, sheet.max_row + 1):
+        for row in range(2, sheet.max_row + 1):
             provice = sheet.cell(row=row, column=tr_index_dict['目的地']).value
+            # 因为可能把空的单元格算进去，所以需要判断
+            if not provice:
+                continue
             # 普通用户下的操作
             if not is_special:
-                # 因为可能把空的单元格算进去，所以需要判断
-                if not provice:
-                    continue
                 try:
                     f_num = float(sheet.cell(row=row, column=tr_index_dict['首重重量']).value)
                     f_price = float(sheet.cell(row=row, column=tr_index_dict['首重价格']).value)
@@ -165,9 +174,13 @@ def excel_provice_handle(path):
                     try:
                         val = float(val)
                     except ValueError:
+                        if '（' in val:
+                            val = val.replace('（', '(')
+                        if '）' in val:
+                            val = val.replace('）', ')')
                         if '+' in val:
                             tmp = val.split('+')
-                            val = sheet[tmp[0]] + '+' + tmp[1].strip()
+                            val = str(sheet[tmp[0]].value) + '+' + tmp[1].strip()
                             # 限制输入字符
                             try:
                                 tmp2 = val
@@ -176,7 +189,7 @@ def excel_provice_handle(path):
                                 tmp2 = tmp2.replace('重量', '100')
                                 eval(tmp2)
                             except Exception:
-                                raise Exception('表-{}, 行-{}, 列-{} 中出现除了占位符<重量>以外的其他中文或中文符号！')
+                                raise Exception('表-{}, 行-{}, 列-{} 中出现除了占位符<重量>以外的其他中文或中文符号！'.format(sheetname, row, tr_index_dict[key]))
                         else:
                             raise Exception('表-{}, 行-{}, 列-{} 格式有误！'.format(sheetname, row, tr_index_dict[key]))
                     finally:
@@ -216,6 +229,7 @@ def excel_handle2(path):
         price_col = sheet.max_column - 1
         price_sum_col = sheet.max_column
         max_row = sheet.max_row
+        print(max_row)
         sum_price = 0
 
         # 去除空sheet
@@ -279,7 +293,6 @@ def excel_handle2(path):
             if custom_id:
                 is_special = custom.get_special_value(custom_id)
 
-            # TODO 重量float
             if weight:
                 try:
                     weight = float(weight)
@@ -351,7 +364,9 @@ if __name__ == '__main__':
     # new, error = excel_provice_handle('客户价格表(正确格式数据)2.xlsx')
     # print(new)
     # print(error)
-    unsign, error = excel_handle2('11月做账定系统测试.xlsx')
-    print(unsign)
-    print(error)
+    # unsign, error = excel_handle2('11月做账定系统测试.xlsx')
+    # print(unsign)
+    # print(error)
+    excel_handle2('10月承包区.xlsx')
     print('====')
+

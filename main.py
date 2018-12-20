@@ -30,8 +30,8 @@ def select_contact_by_name(*args):
 
 
 def select_import_path(i_path):
-    path = askopenfilename(defaultextension='xlsx',  filetypes=[('excel', 'xlsx')])
-    # path = askopenfilename(defaultextension='xlsx')
+    path = askopenfilename(defaultextension='xlsx')
+    # path = askopenfilename(defaultextension='xlsx',  filetypes=[('excel', 'xlsx')])
     i_path.set(path)
     return path
 
@@ -79,8 +79,8 @@ def calc(path):
 
 def import_custom():
     try:
-        path = askopenfilename(defaultextension='xlsx', filetypes=[('excel', 'xlsx')])
-        # path = askopenfilename(defaultextension='xlsx')
+        path = askopenfilename(defaultextension='xlsx')
+        # path = askopenfilename(defaultextension='xlsx',  filetypes=[('excel', 'xlsx')])
         if not path:
             return
         if not os.path.splitext(path)[1] == '.xlsx':

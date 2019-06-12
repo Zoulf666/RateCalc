@@ -107,7 +107,7 @@ class Custom:
                 if id:
                     return id
                 else:
-                    raise Exception('客户名： {} 错误，请传入正确的客户名！'.format(custom_name))
+                    raise Exception('客户名： {} 在模糊匹配模式下重复存在于数据库，请传入正确的客户名！'.format(custom_name))
 
         return custom_id[0][0] if custom_id else 0
 

@@ -1,3 +1,4 @@
+# coding=utf-8
 import model
 
 from openpyxl import load_workbook
@@ -41,13 +42,19 @@ def calc_special_custom_price(weight, price_dict):
         for k, num in enumerate(lower_list):
             if weight > num:
                 if type(lower_dict[lower_list[k - 1]]) is str:
-                    price = eval(extra_price.replace('重量', str(weight)))
+                    if 'ROUNDUP' in extra_price:
+                        price = eval(extra_price.replace('ROUNDUP(重量)', str(ceil(weight))))
+                    else:
+                        price = eval(extra_price.replace('重量', str(weight)))
                 else:
                     price = lower_dict[lower_list[k - 1]]
                 break
             else:
                 if type(lower_dict[lower_list[-1]]) is str:
-                    price = eval(extra_price.replace('重量', str(weight)))
+                    if 'ROUNDUP' in extra_price:
+                        price = eval(extra_price.replace('ROUNDUP(重量)', str(ceil(weight))))
+                    else:
+                        price = eval(extra_price.replace('重量', str(weight)))
                 else:
                     price = lower_dict[lower_list[-1]]
     return price
